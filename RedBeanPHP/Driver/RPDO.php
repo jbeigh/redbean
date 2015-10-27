@@ -213,7 +213,7 @@ class RPDO implements Driver
 	 *
 	 * @return void
 	 */
-	public function __construct( $dsn, $user = NULL, $pass = NULL )
+	public function __construct( $dsn, $user = NULL, $pass = NULL, $pdoAttributes = NULL )
 	{
 		if ( is_object( $dsn ) ) {
 			$this->pdo = $dsn;
@@ -226,6 +226,7 @@ class RPDO implements Driver
 		} else {
 			$this->dsn = $dsn;
 			$this->connectInfo = array( 'pass' => $pass, 'user' => $user );
+			$this->connectInfo['pdoAttributes'] = $pdoAttributes;
 		}
 
 		//PHP 5.3 PDO SQLite has a bug with large numbers:
@@ -297,12 +298,22 @@ class RPDO implements Driver
 		try {
 			$user = $this->connectInfo['user'];
 			$pass = $this->connectInfo['pass'];
+			$pdoAttributes = $this->connectInfo['pdoAttributes'];
+
 			$this->pdo = new \PDO(
 				$this->dsn,
 				$user,
 				$pass
 			);
 			$this->setEncoding();
+
+			if(!empty($this->pdoAttributes) && is_array($this->pdoAttributes)) {
+				//set custom PDO connection attributes
+				foreach($this->pdoAttributes as $attrName => $attrValue){
+					$this->pdo->setAttribute($attrName, $attrValue);
+				}
+			}
+
 			$this->pdo->setAttribute( \PDO::ATTR_STRINGIFY_FETCHES, TRUE );
 			//cant pass these as argument to constructor, CUBRID driver does not understand...
 			$this->pdo->setAttribute( \PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION );
